@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GENZAW · Stream Hub</title>
+<meta name="description" content="Hub oficial de GENZAW — directo de Twitch en vivo, estadísticas, objetivos, juegos, redes y setup." />
+<meta name="theme-color" content="#0a0a0f" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;0,800;1,800;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0a0f; --surface:#13131c; --surface-2:#1b1b27;
+    --border:#2a2a3a; --text:#f4f4f8; --muted:#a0a0b4;
+    --brand:#9146ff; --brand-2:#7b2fff; --accent:#00f0c0;
+    --live:#ff3b5c; --radius:16px; --glass-bg:rgba(27,27,39,.55);
+    --header-bg:rgba(10,10,15,.7);
+  }
+  html.light{
+    --bg:#f5f5fa; --surface:#ffffff; --surface-2:#eef0f6;
+    --border:#dcdce6; --text:#14141f; --muted:#5a5a70;
+    --brand:#7b2fff; --brand-2:#6a1fe0; --accent:#00b894;
+    --live:#e01e42; --glass-bg:rgba(255,255,255,.7);
+    --header-bg:rgba(245,245,250,.8);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text)}
+  body{
+    font-family:'Inter',system-ui,sans-serif;line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    transition:background .3s ease,color .3s ease;
+  }
+  h1,h2,h3,.display{font-family:'Archivo',sans-serif;font-weight:800;font-style:italic;letter-spacing:-.02em;line-height:1.05}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+  .glass{background:var(--glass-bg);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:var(--radius)}
+  /* Background glow */
+  .bg-glow{position:fixed;inset:0;z-index:-1;overflow:hidden}
+  .bg-glow::before,.bg-glow::after{content:"";position:absolute;border-radius:50%;filter:blur(120px);opacity:.4}
+  .bg-glow::before{width:600px;height:600px;background:var(--brand);top:-200px;left:-150px}
+  .bg-glow::after{width:500px;height:500px;background:#1a4dff;bottom:-200px;right:-100px;opacity:.25}
+  html.light .bg-glow::before{opacity:.18}
+  html.light .bg-glow::after{opacity:.12}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:var(--header-bg);border-bottom:1px solid var(--border)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-size:24px;font-style:italic;font-weight:900;font-family:'Archivo';display:flex;align-items:center;gap:10px}
+  .logo b{background:linear-gradient(90deg,var(--brand),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nav-links{display:flex;gap:24px;font-size:14px;font-weight:600;color:var(--muted)}
+  .nav-links a:hover{color:var(--text)}
+  @media(max-width:860px){.nav-links{display:none}}
+  .nav-right{display:flex;align-items:center;gap:12px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;background:var(--brand);color:#fff;transition:.2s;border:none;cursor:pointer}
+  .btn:hover{background:var(--brand-2);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn.ghost:hover{border-color:var(--brand)}
+  .icon-btn{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:transparent;border:1px solid var(--border);color:var(--text);cursor:pointer;transition:.2s}
+  .icon-btn:hover{border-color:var(--brand)}
+  .icon-btn svg{width:20px;height:20px;fill:currentColor}
+
+  /* Live pill */
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+  .pill.live{background:rgba(255,59,92,.15);color:var(--live);border:1px solid rgba(255,59,92,.4)}
+  .pill.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+  .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .pill.live .dot{animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* Hero */
+  .hero{padding:64px 0 40px;text-align:center}
+  .hero h1{font-size:clamp(48px,9vw,104px);text-transform:uppercase}
+  .hero h1 span{background:linear-gradient(90deg,var(--brand),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{max-width:560px;margin:18px auto 28px;color:var(--muted);font-size:18px}
+  .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  /* Layout grid */
+  .grid{display:grid;grid-template-columns:1fr 320px;gap:24px}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+
+  /* Player */
+  .player{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:#000;aspect-ratio:16/9}
+  .player iframe{width:100%;height:100%;border:0;display:block}
+  .player-bar{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:12px}
+  .player-title{font-size:15px;color:var(--muted);max-width:70%}
+  .player-title b{color:var(--text)}
+
+  /* Stats */
+  .stats{display:flex;flex-direction:column;gap:16px}
+  .stat{padding:20px}
+  .stat .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+  .stat .val{font-family:'Archivo';font-style:italic;font-weight:800;font-size:38px;margin-top:6px}
+  .stat .val.accent{color:var(--accent)}
+  .stat .val.live{color:var(--live)}
+
+  /* Section */
+  section{padding:56px 0}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
+  .sec-head h2{font-size:clamp(28px,4vw,42px);text-transform:uppercase}
+  .sec-head .kicker{color:var(--accent);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+
+  /* Goal */
+  .goal{padding:28px}
+  .goal-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .goal-top .num{font-family:'Archivo';font-style:italic;font-weight:800;font-size:30px}
+  .goal-top .num small{color:var(--muted);font-size:16px;font-weight:600}
+  .bar{height:14px;border-radius:999px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border)}
+  .bar>div{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--brand),var(--accent));transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+  .goal .pct{margin-top:10px;color:var(--muted);font-size:13px}
+
+  /* Games */
+  .games{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+  .game{padding:22px;display:flex;flex-direction:column;gap:14px;min-height:230px}
+  .game h3{font-size:20px}
+  .game .desc{color:var(--muted);font-size:13px;margin-top:-6px}
+  .game-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+  .game .score{font-size:13px;color:var(--muted);font-weight:600}
+  .game .big{font-family:'Archivo';font-style:italic;font-weight:800;font-size:34px}
+  #reactionBox{width:100%;height:110px;border-radius:12px;display:grid;place-items:center;cursor:pointer;font-weight:700;border:1px solid var(--border);background:var(--surface-2);user-select:none;transition:background .1s}
+  .guess-in{display:flex;gap:8px;width:100%}
+  .guess-in input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:15px}
+  .memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
+  .mem-cell{aspect-ratio:1;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;font-size:22px;cursor:pointer;transition:.15s}
+  .mem-cell.flip{background:var(--brand);color:#fff}
+  .mem-cell.matched{background:var(--accent);color:#04241d;cursor:default}
+
+  /* Socials */
+  .socials{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
+  .social{padding:22px;display:flex;flex-direction:column;gap:10px;transition:.2s;cursor:pointer}
+  .social:hover{transform:translateY(-4px);border-color:var(--brand)}
+  .social .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2)}
+  .social .ico svg{width:22px;height:22px;fill:var(--text)}
+  .social .name{font-weight:700;font-size:16px}
+  .social .handle{color:var(--muted);font-size:13px}
+
+  /* Setup */
+  .setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .spec{padding:20px;display:flex;gap:14px;align-items:flex-start}
+  .spec .ico{font-size:13px;font-weight:800;color:var(--brand);font-family:'Archivo';font-style:italic}
+  .spec .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  .spec .v{font-weight:600;margin-top:3px}
+
+  footer{border-top:1px solid var(--border);padding:36px 0;color:var(--muted);font-size:14px;text-align:center}
+  footer .logo{justify-content:center;font-size:20px;margin-bottom:10px}
+
+  /* Config note */
+  .cfg{margin:20px auto 0;max-width:760px;padding:14px 18px;border-radius:12px;background:rgba(145,70,255,.08);border:1px solid rgba(145,70,255,.3);font-size:13px;color:var(--muted)}
+  .cfg code{background:var(--surface-2);padding:2px 6px;border-radius:6px;color:var(--accent);font-size:12px}
+
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<header>
+  <div class="wrap nav">
+    <div class="logo">GEN<b>ZAW</b></div>
+    <nav class="nav-links">
+      <a href="#directo">Directo</a>
+      <a href="#objetivo">Objetivo</a>
+      <a href="#redes">Redes</a>
+      <a href="#setup">Setup</a>
+      <a href="#juegos">Juegos</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema"></button>
+      <a class="btn" id="followBtn" href="https://twitch.tv/geenzaw" target="_blank" rel="noopener">Seguir en Twitch</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <div class="wrap hero">
+    <span class="pill off" id="heroPill"><span class="dot"></span><span id="heroPillText">Comprobando estado…</span></span>
+    <h1><br><span>GENZAW</span></h1>
+    <p>Web oficial de GENZAW. Directo en vivo, estadísticas en tiempo real, objetivos de la comunidad, mini-juegos y todo mi setup en un solo sitio.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#directo">Ver el directo</a>
+      <a class="btn ghost" href="#juegos">Jugar ahora</a>
+    </div>
+  </div>
+
+  <!-- DIRECTO + STATS -->
+  <section id="directo" style="padding-top:0">
+    <div class="wrap grid">
+      <div>
+        <div class="player">
+          <iframe id="twitchPlayer"
+            src=""
+            allowfullscreen
+            title="GENZAW en directo en Twitch"></iframe>
+        </div>
+        <div class="player-bar">
+          <div class="player-title"><b id="streamTitle">Conéctate al directo</b><br><span id="streamGame">—</span></div>
+          <a class="btn ghost" href="https://twitch.tv/geenzaw/chat" target="_blank" rel="noopener">Abrir chat</a>
+        </div>
+      </div>
+
+      <aside class="stats">
+        <div class="glass stat">
+          <div class="label">Seguidores</div>
+          <div class="val accent" id="followers">—</div>
+        </div>
+        <div class="glass stat">
+          <div class="label">Viewers ahora</div>
+          <div class="val live" id="viewers">—</div>
+        </div>
+        <div class="glass stat">
+          <div class="label">Tiempo en directo</div>
+          <div class="val" id="uptime">—</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- OBJETIVO -->
+  <section id="objetivo">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="kicker">Comunidad</div>
+          <h2>Objetivo de seguidores</h2>
+        </div>
+      </div>
+      <div class="glass goal">
+        <div class="goal-top">
+          <div class="num"><span id="goalCurrent">0</span> <small>/ <span id="goalTarget">10.000</span></small></div>
+          <div class="num accent" id="goalPct" style="color:var(--accent)">0%</div>
+        </div>
+        <div class="bar"><div id="goalBar"></div></div>
+        <div class="pct" id="goalRemaining">Faltan — seguidores para el siguiente hito.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REDES -->
+  <section id="redes">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="kicker">Sígueme</div>
+          <h2>Mis redes</h2>
+        </div>
+      </div>
+      <div class="socials" id="socials"></div>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="setup">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="kicker">Battlestation</div>
+          <h2>Mi setup</h2>
+        </div>
+      </div>
+      <div class="setup" id="setup-grid"></div>
+    </div>
+  </section>
+
+  <!-- JUEGOS -->
+  <section id="juegos">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="kicker">Diversión</div>
+          <h2>Juegos entretenidos</h2>
+        </div>
+      </div>
+      <div class="games">
+
+        <!-- Reacción -->
+        <div class="glass game">
+          <h3>Test de reacción</h3>
+          <div class="desc">Espera al verde y haz clic lo más rápido posible.</div>
+          <div class="game-area">
+            <div id="reactionBox">Haz clic para empezar</div>
+            <div class="score" id="reactionScore">Mejor: — ms</div>
+          </div>
+        </div>
+
+        <!-- Adivina el número -->
+        <div class="glass game">
+          <h3>Adivina el número</h3>
+          <div class="desc">Pensé un número del 1 al 100. ¿Lo aciertas?</div>
+          <div class="game-area">
+            <div class="score" id="guessHint">Escribe tu intento…</div>
+            <div class="guess-in">
+              <input type="number" id="guessInput" min="1" max="100" placeholder="1-100" />
+              <button class="btn" id="guessBtn">Probar</button>
+            </div>
+            <div class="score" id="guessTries">Intentos: 0</div>
+          </div>
+        </div>
+
+        <!-- Memoria -->
+        <div class="glass game">
+          <h3>Memoria</h3>
+          <div class="desc">Encuentra todas las parejas de emojis.</div>
+          <div class="game-area">
+            <div class="memory-grid" id="memoryGrid"></div>
+            <div class="score" id="memoryScore">Movimientos: 0</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="logo">GEN<b>ZAW</b></div>
+    <p>© <span id="year"></span> GENZAW · Hecho con cariño para la comunidad.</p>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN — edita estos valores
+   ============================================================ */
+const CONFIG = {
+  channel:   "geenzaw",     // login de tu canal de Twitch
+  clientId:  "kjswh8ho80ohq4shlze8rnrpumbl28",   // Twitch Client ID
+  clientSecret: "cacht1kjlx52bocu63n92d29no3og1", // Twitch Client Secret (¡visible en el navegador!)
+
+  /* Hitos de seguidores. El objetivo salta al siguiente automáticamente. */
+  milestones: [100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000, 150000, 200000],
+
+};
+
+/* Redes — edita libremente */
+const SOCIALS = [
+  { name:"Twitch",    handle:"@geenzaw", url:"https://twitch.tv/geenzaw",    icon:"twitch" },
+  { name:"YouTube",   handle:"@genzaw_oficial", url:"https://youtube.com/@genzaw_oficial",  icon:"youtube" },
+  { name:"Instagram", handle:"@genzaw_oficial", url:"https://instagram.com/genzaw_oficial", icon:"instagram" },
+  { name:"TikTok",    handle:"@genzaw",  url:"https://tiktok.com/@genzaw",   icon:"tiktok" },
+];
+
+/* Setup / specs — edita libremente */
+const SETUP = [
+  { tag:"GPU", k:"Gráfica",     v:"NVIDIA GTX 1660" },
+  { tag:"RAM", k:"Memoria",     v:"16GB RAM" },
+  { tag:"KEY", k:"Teclado",     v:"Mars Gaming" },
+  { tag:"MOU", k:"Ratón",       v:"Dyeria" },
+  { tag:"AUD", k:"Auriculares", v:"In-ear" },
+  { tag:"MIC", k:"Micrófono",   v:"TONOR" },
+];
+
+/* ============================================================
+   ICONOS SVG
+   ============================================================ */
+const ICONS = {
+  twitch:'<svg viewBox="0 0 24 24"><path d="M11.64 5.93h1.43v4.28h-1.43m3.93-4.28H17v4.28h-1.43M7 2L3.43 5.57v12.86h4.28V22l3.58-3.57h2.85L20.57 12V2m-1.43 9.29l-2.85 2.85h-2.86l-2.5 2.5v-2.5H7.71V3.43h11.43z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.12-2.12C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.53A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.12 2.12C4.5 20.45 12 20.45 12 20.45s7.5 0 9.38-.53a3 3 0 0 0 2.12-2.12A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.55 15.57V8.43L15.82 12z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58 0 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s0 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58 0-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85s0-3.58.07-4.85C2.38 3.92 3.9 2.38 7.15 2.23 8.42 2.18 8.8 2.16 12 2.16zm0 3.7A6.14 6.14 0 1 0 18.14 12 6.14 6.14 0 0 0 12 5.86zm0 10.13A3.99 3.99 0 1 1 15.99 12 4 4 0 0 1 12 15.99zm6.4-10.4a1.44 1.44 0 1 0 1.43 1.44 1.44 1.44 0 0 0-1.44-1.44z"/></svg>',
+  tiktok:'<svg viewBox="0 0 24 24"><path d="M16.6 5.82a4.28 4.28 0 0 1-1-2.82h-3.1v13.9a2.6 2.6 0 1 1-2.6-2.6c.27 0 .53.05.78.12V11.2a6.05 6.05 0 0 0-.78-.05A5.69 5.69 0 1 0 15.6 16.7V9.6a7.34 7.34 0 0 0 4.4 1.45V7.95a4.3 4.3 0 0 1-3.4-2.13z"/></svg>',
+  sun:'<svg viewBox="0 0 24 24"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-13a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1zM3 11h2a1 1 0 0 1 0 2H3a1 1 0 0 1 0-2zm16 0h2a1 1 0 0 1 0 2h-2a1 1 0 0 1 0-2zM5.6 4.2l1.4 1.4A1 1 0 0 1 5.6 7L4.2 5.6a1 1 0 0 1 1.4-1.4zm12.8 12.8l1.4 1.4a1 1 0 0 1-1.4 1.4L17 18.4a1 1 0 0 1 1.4-1.4zM4.2 18.4L5.6 17A1 1 0 0 1 7 18.4l-1.4 1.4a1 1 0 0 1-1.4-1.4zM17 5.6l1.4-1.4a1 1 0 0 1 1.4 1.4L18.4 7A1 1 0 0 1 17 5.6z"/></svg>',
+  moon:'<svg viewBox="0 0 24 24"><path d="M12.7 2a1 1 0 0 1 .3 1.9 7 7 0 0 0 7.1 11.6 1 1 0 0 1 1.2 1.5A9 9 0 1 1 11.2 2.1a1 1 0 0 1 1.5-.1z"/></svg>',
+};
+
+/* ============================================================
+   TEMA CLARO / OSCURO
+   ============================================================ */
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(mode){
+  const light = mode === 'light';
+  document.documentElement.classList.toggle('light', light);
+  document.documentElement.classList.toggle('dark', !light);
+  themeToggle.innerHTML = light ? ICONS.moon : ICONS.sun;
+  document.querySelector('meta[name=theme-color]').setAttribute('content', light ? '#f5f5fa' : '#0a0a0f');
+}
+applyTheme(localStorage.getItem('genzaw-theme') || 'dark');
+themeToggle.addEventListener('click', () => {
+  const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+  localStorage.setItem('genzaw-theme', next);
+  applyTheme(next);
+});
+
+/* ============================================================
+   RENDER ESTÁTICO
+   ============================================================ */
+document.getElementById('year').textContent = new Date().getFullYear();
+document.getElementById('followBtn').href = "https://twitch.tv/" + CONFIG.channel;
+
+document.getElementById('twitchPlayer').src =
+  `https://player.twitch.tv/?channel=${CONFIG.channel}&parent=${location.hostname || 'localhost'}&muted=true`;
+
+document.getElementById('socials').innerHTML = SOCIALS.map(s => `
+  <a class="glass social" href="${s.url}" target="_blank" rel="noopener">
+    <div class="ico">${ICONS[s.icon]||''}</div>
+    <div class="name">${s.name}</div>
+    <div class="handle">${s.handle}</div>
+  </a>`).join('');
+
+document.getElementById('setup-grid').innerHTML = SETUP.map(s => `
+  <div class="glass spec">
+    <div class="ico">${s.tag}</div>
+    <div><div class="k">${s.k}</div><div class="v">${s.v}</div></div>
+  </div>`).join('');
+
+/* ============================================================
+   OBJETIVO CON HITOS AUTOMÁTICOS
+   ============================================================ */
+function nextMilestone(current){
+  for(const m of CONFIG.milestones){ if(m > current) return m; }
+  // Si supera todos los hitos definidos, sube en tramos de 50k
+  return Math.ceil((current + 1) / 50000) * 50000;
+}
+
+function animateCount(el, target){
+  const start = 0, dur = 1200, t0 = performance.now();
+  function step(now){
+    const p = Math.min((now-t0)/dur, 1);
+    const eased = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.floor(eased*target).toLocaleString('es-ES');
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function setGoal(current){
+  const target = nextMilestone(current);
+  const pct = Math.min(100, (current / target) * 100);
+  document.getElementById('goalCurrent').textContent = current.toLocaleString('es-ES');
+  document.getElementById('goalTarget').textContent = target.toLocaleString('es-ES');
+  document.getElementById('goalPct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('goalBar').style.width = pct + '%';
+  const remaining = Math.max(0, target - current);
+  document.getElementById('goalRemaining').textContent =
+    `Faltan ${remaining.toLocaleString('es-ES')} seguidores para el hito de ${target.toLocaleString('es-ES')}.`;
+}
+
+/* ============================================================
+   ESTADO DIRECTO
+   ============================================================ */
+function setLive(isLive, data){
+  const pill = document.getElementById('heroPill');
+  const txt  = document.getElementById('heroPillText');
+  if(isLive){
+    pill.className = 'pill live';
+    txt.textContent = 'EN DIRECTO AHORA';
+    document.getElementById('viewers').textContent = (data.viewer_count||0).toLocaleString('es-ES');
+    document.getElementById('streamTitle').textContent = data.title || 'En directo';
+    document.getElementById('streamGame').textContent = data.game_name || '';
+    startUptime(new Date(data.started_at).getTime());
+  } else {
+    pill.className = 'pill off';
+    txt.textContent = 'Sin conexión · vuelve pronto';
+    document.getElementById('viewers').textContent = '0';
+    document.getElementById('uptime').textContent = 'Offline';
+  }
+}
+
+let uptimeTimer;
+function startUptime(startMs){
+  clearInterval(uptimeTimer);
+  const tick = () => {
+    const s = Math.floor((Date.now()-startMs)/1000);
+    const h = String(Math.floor(s/3600)).padStart(2,'0');
+    const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
+    const sec = String(s%60).padStart(2,'0');
+    document.getElementById('uptime').textContent = `${h}:${m}:${sec}`;
+  };
+  tick(); uptimeTimer = setInterval(tick, 1000);
+}
+
+/* ============================================================
+   TWITCH API (cliente) — solo si hay credenciales
+   ============================================================ */
+async function loadTwitch(){
+  if(!CONFIG.clientId || !CONFIG.clientSecret){
+    document.getElementById('heroPillText').textContent = 'Configura tus credenciales de Twitch';
+    animateCount(document.getElementById('followers'), 0);
+    setGoal(0);
+    return;
+  }
+  try{
+    const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${CONFIG.clientId}&client_secret=${CONFIG.clientSecret}&grant_type=client_credentials`, { method:'POST' });
+    const { access_token } = await tokenRes.json();
+    const headers = { 'Client-ID': CONFIG.clientId, 'Authorization': 'Bearer ' + access_token };
+
+    const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${CONFIG.channel}`, { headers });
+    const user = (await userRes.json()).data?.[0];
+    if(!user) throw new Error('Canal no encontrado');
+
+    const followRes = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${user.id}`, { headers });
+    const followers = (await followRes.json()).total || 0;
+    animateCount(document.getElementById('followers'), followers);
+    setGoal(followers);
+
+    const streamRes = await fetch(`https://api.twitch.tv/helix/streams?user_login=${CONFIG.channel}`, { headers });
+    const stream = (await streamRes.json()).data?.[0];
+    setLive(!!stream, stream || {});
+  }catch(e){
+    console.log('[v0] Error Twitch:', e.message);
+    document.getElementById('heroPillText').textContent = 'No se pudieron cargar los stats';
+    setGoal(0);
+  }
+}
+
+loadTwitch();
+setInterval(loadTwitch, 60000); // refresco cada 60s
+
+/* ============================================================
+   JUEGO 1 · TEST DE REACCIÓN
+   ============================================================ */
+(function(){
+  const box = document.getElementById('reactionBox');
+  const scoreEl = document.getElementById('reactionScore');
+  let state = 'idle', startAt = 0, timer = null, best = null;
+  const surface2 = () => getComputedStyle(document.documentElement).getPropertyValue('--surface-2');
+  function reset(){ state='idle'; box.style.background=surface2(); box.style.color='var(--text)'; box.textContent='Haz clic para empezar'; }
+  reset();
+  box.addEventListener('click', () => {
+    if(state === 'idle'){
+      state='waiting'; box.style.background='var(--live)'; box.style.color='#fff'; box.textContent='Espera al verde…';
+      timer = setTimeout(() => { state='go'; startAt=performance.now(); box.style.background='var(--accent)'; box.style.color='#04241d'; box.textContent='¡CLIC YA!'; }, 900 + Math.random()*2200);
+    } else if(state === 'waiting'){
+      clearTimeout(timer); box.style.background='var(--live)'; box.style.color='#fff'; box.textContent='¡Demasiado pronto! Clic para reintentar'; state='idle';
+    } else if(state === 'go'){
+      const ms = Math.round(performance.now()-startAt);
+      best = best===null ? ms : Math.min(best, ms);
+      scoreEl.textContent = `Última: ${ms} ms · Mejor: ${best} ms`;
+      box.textContent = `${ms} ms · clic para repetir`; box.style.background=surface2(); box.style.color='var(--text)'; state='idle';
+    }
+  });
+})();
+
+/* ============================================================
+   JUEGO 2 · ADIVINA EL NUMERO
+   ============================================================ */
+(function(){
+  let secret = Math.floor(Math.random()*100)+1, tries=0;
+  const hint = document.getElementById('guessHint');
+  const input = document.getElementById('guessInput');
+  const triesEl = document.getElementById('guessTries');
+  function guess(){
+    const v = parseInt(input.value, 10);
+    if(isNaN(v) || v<1 || v>100){ hint.textContent='Escribe un número del 1 al 100'; return; }
+    tries++; triesEl.textContent = `Intentos: ${tries}`;
+    if(v === secret){ hint.textContent = `¡Correcto! Era ${secret} 🎉 (nuevo número listo)`; secret = Math.floor(Math.random()*100)+1; tries=0; }
+    else hint.textContent = v < secret ? 'Más alto ⬆️' : 'Más bajo ⬇️';
+    input.value=''; input.focus();
+  }
+  document.getElementById('guessBtn').addEventListener('click', guess);
+  input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.nativeEvent?.isComposing) guess(); });
+})();
+
+/* ============================================================
+   JUEGO 4 · MEMORIA
+   ============================================================ */
+(function(){
+  const grid = document.getElementById('memoryGrid');
+  const scoreEl = document.getElementById('memoryScore');
+  const set = ['🎮','🕹️','🎧','⭐','🔥','🚀','💜','🏆'];
+  let first=null, lock=false, moves=0, matched=0;
+  function build(){
+    first=null; lock=false; moves=0; matched=0; scoreEl.textContent='Movimientos: 0';
+    const cards = [...set, ...set].sort(() => Math.random()-.5);
+    grid.innerHTML = cards.map((c,i)=>`<div class="mem-cell" data-i="${i}" data-v="${c}"></div>`).join('');
+    grid.querySelectorAll('.mem-cell').forEach(cell => cell.addEventListener('click', () => flip(cell)));
+  }
+  function flip(cell){
+    if(lock || cell.classList.contains('flip') || cell.classList.contains('matched')) return;
+    cell.classList.add('flip'); cell.textContent = cell.dataset.v;
+    if(!first){ first = cell; return; }
+    moves++; scoreEl.textContent = `Movimientos: ${moves}`;
+    if(first.dataset.v === cell.dataset.v){
+      first.classList.add('matched'); cell.classList.add('matched'); first=null; matched++;
+      if(matched === set.length){ scoreEl.textContent = `¡Completado en ${moves} movimientos! 🎉`; setTimeout(build, 1500); }
+    } else {
+      lock=true; const a=first, b=cell; first=null;
+      setTimeout(() => { [a,b].forEach(x=>{x.classList.remove('flip');x.textContent='';}); lock=false; }, 700);
+    }
+  }
+  build();
+})();
+</script>
+</body>
+</html>
