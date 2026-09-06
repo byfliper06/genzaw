@@ -618,8 +618,10 @@ setInterval(loadTwitch, 60000); // refresco cada 60s
 (function(){
   const start = new Date(2026, 8, 9);
   const end = new Date(2027, 5, 19);
-  const key = 'genzaw-calendar';
-  const saved = JSON.parse(localStorage.getItem(key) || '{}');
+  const firebaseDatabaseUrl = 'https://imperio-zaw-default-rtdb.firebaseio.com';
+  const firebasePath = `${firebaseDatabaseUrl}/genzaw-calendar.json`;
+  let saved = {};
+  let isSaving = false;
   const months = document.getElementById('calendarMonths');
   const remaining = document.getElementById('daysRemaining');
   const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -651,8 +653,28 @@ setInterval(loadTwitch, 60000); // refresco cada 60s
     const totalDays = Math.round((end-start)/86400000)+1;
     remaining.textContent = totalDays - Object.keys(saved).length;
   }
-  function persist(){localStorage.setItem(key,JSON.stringify(saved));}
-  function route(){const active=location.hash.toLowerCase()==='#calendario';document.documentElement.classList.toggle('calendar-mode',active);if(active)render();}
+  async function loadFromFirebase(){
+    try{
+      const response = await fetch(firebasePath);
+      if(!response.ok) throw new Error(`Firebase respondió ${response.status}`);
+      const data = await response.json();
+      saved = data && typeof data === 'object' ? data : {};
+      render();
+    }catch(error){
+      console.error('[v0] No se pudo cargar el calendario desde Firebase:', error);
+    }
+  }
+  async function persist(){
+    if(isSaving) return;
+    isSaving = true;
+    try{
+      const response = await fetch(firebasePath,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(saved)});
+      if(!response.ok) throw new Error(`Firebase respondió ${response.status}`);
+    }catch(error){
+      console.error('[v0] No se pudo guardar el calendario en Firebase:', error);
+    }finally{isSaving=false;}
+  }
+  function route(){const active=location.hash.toLowerCase()==='#calendario';document.documentElement.classList.toggle('calendar-mode',active);if(active){render();loadFromFirebase();}}
   window.addEventListener('hashchange',route); route();
 })();
 </script>
