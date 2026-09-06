@@ -148,6 +148,27 @@
   .cfg{margin:20px auto 0;max-width:760px;padding:14px 18px;border-radius:12px;background:rgba(145,70,255,.08);border:1px solid rgba(145,70,255,.3);font-size:13px;color:var(--muted)}
   .cfg code{background:var(--surface-2);padding:2px 6px;border-radius:6px;color:var(--accent);font-size:12px}
 
+
+  /* Calendario oculto: solo aparece al visitar #calendario */
+  #calendarView{display:none;min-height:100vh;padding:34px 20px 60px}
+  html.calendar-mode body>*:not(#calendarView){display:none!important}
+  html.calendar-mode #calendarView{display:block}
+  .calendar-shell{max-width:980px;margin:0 auto}
+  .calendar-top{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+  .calendar-top h1{font-size:clamp(34px,7vw,68px);text-transform:uppercase}
+  .calendar-top h1 span{background:linear-gradient(90deg,var(--brand),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .calendar-count{padding:18px 22px;text-align:right}
+  .calendar-count .number{display:block;font:800 italic clamp(32px,6vw,52px)/1 'Archivo';color:var(--accent)}
+  .calendar-count small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .calendar-legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-bottom:24px}
+  .legend-item{display:flex;align-items:center;gap:7px}.legend-dot{width:13px;height:13px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border)}
+  .legend-dot.done{background:var(--accent);border-color:var(--accent)}.legend-dot.long{background:#ff9f43;border-color:#ff9f43}
+  .calendar-months{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:18px}
+  .calendar-month{padding:18px}.calendar-month h2{font-size:24px;text-transform:uppercase;margin-bottom:14px;color:var(--text)}
+  .weekdays,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.weekdays{margin-bottom:6px;color:var(--muted);font-size:10px;text-align:center;font-weight:700}
+  .day{aspect-ratio:1;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;transition:.15s;touch-action:manipulation}
+  .day:hover{border-color:var(--brand);transform:translateY(-1px)}.day.done{background:var(--accent);border-color:var(--accent);color:#04241d}.day.long{background:#ff9f43;border-color:#ff9f43;color:#351b05}.day.empty{visibility:hidden;pointer-events:none}
+  @media(max-width:520px){#calendarView{padding-inline:12px}.calendar-month{padding:12px}.calendar-months{grid-template-columns:1fr}.day{font-size:12px}}
 </style>
 </head>
 <body>
@@ -169,6 +190,17 @@
     </div>
   </div>
 </header>
+
+<div id="calendarView" aria-label="Calendario del curso">
+  <div class="calendar-shell">
+    <div class="calendar-top">
+      <div><div class="kicker">Planifica tu curso</div><h1>Mi <span>calendario</span></h1></div>
+      <div class="glass calendar-count"><span class="number" id="daysRemaining">0</span><small>días restantes</small></div>
+    </div>
+    <div class="calendar-legend"><span class="legend-item"><i class="legend-dot"></i>Sin marcar</span><span class="legend-item"><i class="legend-dot done"></i>Hecho</span><span class="legend-item"><i class="legend-dot long"></i>Día especial</span><span>Mantén pulsado un día para marcarlo como especial</span></div>
+    <div class="calendar-months" id="calendarMonths"></div>
+  </div>
+</div>
 
 <main>
   <!-- HERO -->
@@ -578,6 +610,50 @@ setInterval(loadTwitch, 60000); // refresco cada 60s
     }
   }
   build();
+})();
+
+/* ============================================================
+   CALENDARIO OCULTO · entra con #calendario
+   ============================================================ */
+(function(){
+  const start = new Date(2026, 8, 9);
+  const end = new Date(2027, 5, 19);
+  const key = 'genzaw-calendar';
+  const saved = JSON.parse(localStorage.getItem(key) || '{}');
+  const months = document.getElementById('calendarMonths');
+  const remaining = document.getElementById('daysRemaining');
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const weekNames = ['L','M','X','J','V','S','D'];
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function render(){
+    months.innerHTML = '';
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    while(cursor <= end){
+      const year = cursor.getFullYear(), month = cursor.getMonth();
+      const card = document.createElement('section'); card.className='glass calendar-month';
+      card.innerHTML = `<h2>${monthNames[month]} <span style="color:var(--muted);font-size:15px">${year}</span></h2><div class="weekdays">${weekNames.map(x=>`<span>${x}</span>`).join('')}</div><div class="days"></div>`;
+      const days = card.querySelector('.days');
+      const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
+      for(let i=0;i<firstDay;i++) days.appendChild(Object.assign(document.createElement('button'),{className:'day empty',tabIndex:-1}));
+      const total = new Date(year, month+1, 0).getDate();
+      for(let n=1;n<=total;n++){
+        const date = new Date(year, month, n), id = iso(date), valid = date>=start && date<=end;
+        const day = document.createElement('button'); day.className='day'; day.textContent=n; day.type='button'; day.setAttribute('aria-label', `${n} de ${monthNames[month]} de ${year}`); let longPressed = false;
+        if(!valid){day.classList.add('empty');day.disabled=true;} else {if(saved[id]) day.classList.add(saved[id]); let press;
+          day.addEventListener('pointerdown',()=>{press=setTimeout(()=>{longPressed=true; saved[id]=saved[id]==='long'?undefined:'long'; if(!saved[id]) delete saved[id]; persist(); render();},550);});
+          ['pointerup','pointerleave','pointercancel'].forEach(e=>day.addEventListener(e,()=>clearTimeout(press)));
+          day.addEventListener('click',()=>{if(longPressed){longPressed=false;return;} if(saved[id]==='long') delete saved[id]; else saved[id]='done'; persist(); render();});
+        }
+        days.appendChild(day);
+      }
+      months.appendChild(card); cursor = new Date(year, month+1, 1);
+    }
+    const totalDays = Math.round((end-start)/86400000)+1;
+    remaining.textContent = totalDays - Object.keys(saved).length;
+  }
+  function persist(){localStorage.setItem(key,JSON.stringify(saved));}
+  function route(){const active=location.hash.toLowerCase()==='#calendario';document.documentElement.classList.toggle('calendar-mode',active);if(active)render();}
+  window.addEventListener('hashchange',route); route();
 })();
 </script>
 </body>
